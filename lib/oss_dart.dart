@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'utils.dart';
 
 /// OSS Client
-class Client {
+class OssClient {
   String endpoint;
   Function tokenGetter; //获取临时账号
   Map<String, String> headers = {}; //请求的header
@@ -16,18 +16,18 @@ class Client {
   String method;
   Map params = {};
   String accessKey; //sts账号
-  String accessSecret; //sts账号密码
+  String accessSecret; //sts账号密码s
   String secureToken; //sts账号token
   String expire; //过期时间
   String bucketName = '';
   String fileKey;
-  Client({this.endpoint, this.bucketName, this.tokenGetter});
+  OssClient({this.endpoint, this.bucketName, this.tokenGetter});
 
   bool _checkExpire(String expire) {
     if (expire == null) {
       return false;
     }
-    final expireIn = DateTime.parse(expire);
+    final expireIn = DateTime.parse(expire).toLocal();
     if (new DateTime.now().compareTo(expireIn) > 0) {
       return true;
     }
@@ -79,9 +79,8 @@ class Client {
     this.method = 'PUT';
     this.fileKey = fileKey;
     _signRequest();
-    var response = await http.put(url, headers: headers, body: fileData);
-    var data = parseXml(response.body);
-    return data;
+    return await http.put(url, headers: headers, body: fileData);
+
   }
 
   //初始化分片上传
@@ -91,9 +90,8 @@ class Client {
     this.method = 'POST';
     this.fileKey = fileKey;
     _signRequest();
-    var response = await http.post(url, headers: headers);
-    var data = parseXml(response.body);
-    return data;
+    return await http.post(url, headers: headers);
+
   }
 
   //上传分片
@@ -111,16 +109,16 @@ class Client {
   // @param uploadId type:String name of multiUpload
   // @param fileKey type:String upload filename
   completeMultipartUpload(
-      List etags, String fileKey, String uploadId, num partNum) async {
+      List etags, String fileKey, String uploadId) async {
     await init();
     String xml = _createXml(etags);
     var bytes = Uint8List.fromList(xml.codeUnits);
     this.headers['content-md5'] = md5File(bytes);
     this.method = 'POST';
+    this.fileKey = '$fileKey?uploadId=$uploadId';
     _signRequest();
-    var response = await http.post(url, headers: headers, body: bytes);
-    var data = parseXml(response.body);
-    return data;
+    return await http.post(url, headers: headers, body: bytes);
+    
   }
 
   //列举指定Upload ID所属的所有已经上传成功Part
@@ -131,11 +129,9 @@ class Client {
     this.method = 'GET';
     this.fileKey = '$fileKey?uploadId=$uploadId';
     _signRequest();
-    var response = await http.get(url, headers: headers);
-    var data = parseXml(response.body);
-    return data;
+    return await http.get(url, headers: headers);
   }
-  //获取object
+  //下载文件
   // @param fileKey type:String upload filename
   getObject(String fileKey) async{
     await init();
