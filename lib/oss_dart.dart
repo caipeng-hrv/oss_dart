@@ -80,7 +80,6 @@ class OssClient {
     this.fileKey = fileKey;
     _signRequest();
     return await http.put(url, headers: headers, body: fileData);
-
   }
 
   //初始化分片上传
@@ -91,7 +90,6 @@ class OssClient {
     this.fileKey = fileKey;
     _signRequest();
     return await http.post(url, headers: headers);
-
   }
 
   //上传分片
@@ -108,8 +106,7 @@ class OssClient {
   // @param etags type:List 所有分片的tag，按上传编号排序
   // @param uploadId type:String name of multiUpload
   // @param fileKey type:String upload filename
-  completeMultipartUpload(
-      List etags, String fileKey, String uploadId) async {
+  completeMultipartUpload(List etags, String fileKey, String uploadId) async {
     await init();
     String xml = _createXml(etags);
     var bytes = Uint8List.fromList(xml.codeUnits);
@@ -118,7 +115,6 @@ class OssClient {
     this.fileKey = '$fileKey?uploadId=$uploadId';
     _signRequest();
     return await http.post(url, headers: headers, body: bytes);
-    
   }
 
   //列举指定Upload ID所属的所有已经上传成功Part
@@ -131,16 +127,16 @@ class OssClient {
     _signRequest();
     return await http.get(url, headers: headers);
   }
+
   //下载文件
   // @param fileKey type:String upload filename
-  getObject(String fileKey) async{
+  getObject(String fileKey) async {
     await init();
     this.method = 'GET';
     this.fileKey = fileKey;
     _signRequest();
     return await http.get(url, headers: headers);
   }
-
 
   static const _subresource_key_set = [
     'response-content-type',

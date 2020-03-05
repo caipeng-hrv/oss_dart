@@ -1,8 +1,8 @@
 name: oss_dart
 description: A new Flutter package project.
 version: 0.0.1
-author:
-homepage:
+author: caipeng<caipenghsxr@gmail.com>
+homepage: https://github.com/caipeng-hrv/oss_dart
 
 environment:
   sdk: ">=2.1.0 <3.0.0"
@@ -10,10 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  crypto:
-  intl:
-  http:
-  xml2json:
+  crypto: ^2.1.4
+  intl: ^0.16.1
+  http: ^0.12.0+4
+  xml2json: ^4.1.1
 
 dev_dependencies:
   flutter_test:
