@@ -10,10 +10,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  crypto: ^2.1.4
-  intl: ^0.15.8
-  http: ^0.12.0+4
-  xml2json: ^4.1.1
+  crypto: 
+  intl: 
+  http: 
+  xml2json: 
 
 dev_dependencies:
   flutter_test:
