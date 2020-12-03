@@ -2,12 +2,15 @@ library oss_dart;
 
 /// A Calculator.
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
-
-import 'utils.dart';
+import 'package:crypto/crypto.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 /// OSS Client
+/// 如何限制文件覆盖
 class OssClient {
   String endpoint;
   Function tokenGetter; //获取临时账号
@@ -21,7 +24,14 @@ class OssClient {
   String expire; //过期时间
   String bucketName = '';
   String fileKey;
-  OssClient({this.endpoint, this.bucketName, this.tokenGetter});
+  Map<String, dynamic> callBack; //回调函数
+  Map<String, String> callBackVar;
+  OssClient(
+      {this.endpoint,
+      this.bucketName,
+      this.tokenGetter,
+      this.callBack,
+      this.callBackVar});
 
   bool _checkExpire(String expire) {
     if (expire == null) {
@@ -69,8 +79,19 @@ class OssClient {
     await init();
     this.headers = {
       'content-md5': md5File(fileData),
-      'content-type': 'application/octet-stream'
+      'content-type': 'application/octet-stream',
     };
+    if (!(callBack?.isEmpty ?? true)) {
+      this.headers = {
+        'x-oss-callback': base64Encode(utf8.encode(jsonEncode(callBack))),
+      };
+      if (!(callBackVar?.isEmpty ?? true)) {
+        this.headers = {
+          'x-oss-callback-var':
+              base64Encode(utf8.encode(jsonEncode(callBackVar))),
+        };
+      }
+    }
     if (header != null) {
       for (var key in header.keys) {
         headers[key] = header[key];
@@ -136,6 +157,22 @@ class OssClient {
     this.fileKey = fileKey;
     _signRequest();
     return await http.get(url, headers: headers);
+  }
+
+  //私有对象签名后url
+  //@param exp url有效期
+  getUrl(String fileKey, {int exp = 3600}) async {
+    await init();
+    headers['date'] = (DateTime.now().millisecondsSinceEpoch + exp).toString();
+    this.method = 'GET';
+    this.fileKey = fileKey;
+    bool hasSymbol = fileKey.indexOf("?") >= 0;
+    // headers['x-oss-security-token'] = this.secureToken;
+    params["security-token"] = this.secureToken;
+    String signature = this._makeSignature();
+    return "${this.bucketName}.${this.endpoint}/$fileKey${(hasSymbol ? '&' : "?")}"
+        "Expires=${headers['date']}&OSSAccessKeyId=${this.accessKey}&Signature=${Uri.encodeQueryComponent(signature)}"
+        "&security-token=${Uri.encodeQueryComponent(this.secureToken)}";
   }
 
   static const _subresource_key_set = [
@@ -240,7 +277,7 @@ class OssClient {
   }
 
   String _getSubresourceString() {
-    if ((params ?? {}).isNotEmpty) {
+    if ((params ?? {}).isEmpty) {
       return '';
     }
     var subresourceParams = [];
@@ -268,4 +305,24 @@ class OssClient {
       return '';
     }
   }
+}
+
+String hmacSign(String secret, String raw) {
+  var hmac = new Hmac(sha1, utf8.encode(secret));
+  final digest = hmac.convert(utf8.encode(raw));
+  return base64Encode(digest.bytes);
+}
+
+String md5File(List<int> fileData) {
+  var digest = md5.convert(fileData);
+  // 这里其实就是 digest.toString()
+  return base64Encode(digest.bytes);
+}
+
+String httpDateNow() {
+  final dt = new DateTime.now();
+  initializeDateFormatting();
+  final formatter = new DateFormat('EEE, dd MMM yyyy HH:mm:ss', 'en_ISO');
+  final dts = formatter.format(dt.toUtc());
+  return "$dts GMT";
 }
